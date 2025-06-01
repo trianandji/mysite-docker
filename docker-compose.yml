@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  drupal:
+    image: anand1914/mysite-drupal:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    restart: always
+    volumes:
+      - ./web:/var/www/html/web
+      - ./config:/var/www/html/config
+      # optionally add persistent files directory
+      - ./files:/var/www/html/web/sites/default/files
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: india123#
+      MYSQL_DATABASE: drupal11
+      MYSQL_PASSWORD: india123#
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    restart: always
+
+volumes:
+  db_data:

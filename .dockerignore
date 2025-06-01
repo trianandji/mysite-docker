@@ -1,0 +1,8 @@
+web/sites/default/settings.docker.php
+vendor
+.git
+.dockerignore
+Dockerfile
+docker-compose.yml
+*.md
+
