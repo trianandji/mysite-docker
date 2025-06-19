@@ -873,6 +873,7 @@ $settings['migrate_node_migrate_type_classic'] = FALSE;
 # }
 
 
+/*
 $databases['default']['default'] = array (
   'database' => 'drupal11',
   'username' => 'root',
@@ -885,6 +886,21 @@ $databases['default']['default'] = array (
   'namespace' => 'Drupal\\mysql\\Driver\\Database\\mysql',
   'autoload' => 'core/modules/mysql/src/Driver/Database/mysql/',
 );
+*/
+
+$databases['default']['default'] = array (
+  'database' => getenv('DRUPAL_DATABASE_NAME') ?: 'drupal11',
+  'username' => getenv('DRUPAL_DATABASE_USER') ?: 'root',
+  'password' => getenv('DRUPAL_DATABASE_PASSWORD') ?: 'india123#',
+  'prefix' => '',
+  'host' => getenv('DRUPAL_DATABASE_HOST') ?: 'localhost',
+  'port' => '3306',
+  'isolation_level' => 'READ COMMITTED',
+  'driver' => 'mysql',
+  'namespace' => 'Drupal\\mysql\\Driver\\Database\\mysql',
+  'autoload' => 'core/modules/mysql/src/Driver/Database/mysql/',
+);
+
 $settings['config_sync_directory'] = 'sites/default/files/config_g_eRZDcR8CIdvnkroD_9HwtpoSFUhwLNkXNkGXN8lJHn4MZ-jb5Jle0QCAwbJHHLNjZjf4oqyQ/sync';
 
 if (file_exists(__DIR__ . '/settings.docker.php')) {
