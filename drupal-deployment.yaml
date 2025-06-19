@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drupal-deployment
+  labels:
+    app: drupal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drupal
+  template:
+    metadata:
+      labels:
+        app: drupal
+    spec:
+      containers:
+      - name: drupal
+        image: trianandji/drupal-app:latest # Using a descriptive image name/registry prefix
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80
+        env:
+        # These environment variables will be passed to your Drupal container
+        # Ensure your Drupal settings.php is configured to use them for database connection
+        - name: DRUPAL_DATABASE_HOST
+          value: drupal-mysql # This refers to the Kubernetes Service name for MySQL
+        - name: DRUPAL_DATABASE_NAME
+          value: drupaldb
+        - name: DRUPAL_DATABASE_USER
+          value: drupaluser
+        - name: DRUPAL_DATABASE_PASSWORD
+          value: "india123#" # CHANGE THIS! For production, use Kubernetes Secrets.
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drupal-service
+  labels:
+    app: drupal
+spec:
+  selector:
+    app: drupal
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drupal-mysql-deployment
+  labels:
+    app: drupal-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drupal-mysql
+  template:
+    metadata:
+      labels:
+        app: drupal-mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0 # Use a specific, stable MySQL version
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "india123#" # CHANGE THIS!
+        - name: MYSQL_DATABASE
+          value: drupaldb
+        - name: MYSQL_USER
+          value: drupaluser
+        - name: MYSQL_PASSWORD
+          value: "india123#" # CHANGE THIS!
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drupal-mysql
+  labels:
+    app: drupal-mysql
+spec:
+  selector:
+    app: drupal-mysql
+  ports:
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
