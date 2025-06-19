@@ -39,8 +39,8 @@ RUN a2enmod rewrite
 #    - This assumes your Drupal website's *root* (where index.php, composer.json, etc. are)
 #      is directly under the 'html' folder in your Git repo.
 #    - Make sure the 'html' folder in your repo contains everything needed for Drupal.
-COPY ./html /var/www/html/
-
+#COPY ./html /var/www/html/
+COPY ./web /var/www/html/
 # 5. Set correct permissions for Drupal.
 #    - More granular permissions: 755 for directories, 644 for files.
 #    - This ensures the web server can read files and traverse directories, but not write where it shouldn't.
