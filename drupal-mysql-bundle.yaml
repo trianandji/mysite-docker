@@ -1,0 +1,103 @@
+# ---------------- MYSQL Deployment ----------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drupal-mysql-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drupal-mysql
+  template:
+    metadata:
+      labels:
+        app: drupal-mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "india123#"
+        - name: MYSQL_DATABASE
+          value: "drupaldb"
+        - name: MYSQL_USER
+          value: drupaluser
+        - name: MYSQL_PASSWORD
+          value: "india123#" # CHANGE THIS!  
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mysql-storage
+      volumes:
+      - name: mysql-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drupal-mysql
+spec:
+  selector:
+    app: drupal-mysql
+  ports:
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306
+
+# ---------------- DRUPAL Deployment ----------------
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drupal-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drupal
+  template:
+    metadata:
+      labels:
+        app: drupal
+    spec:
+      containers:
+      - name: drupal
+        image: anandcontainerregistry.azurecr.io/drupal-app:latest  # Replace <ACR_NAME>
+        ports:
+        - containerPort: 80
+        env:
+        - name: DRUPAL_DB_HOST
+          value: drupal-mysql
+        - name: DRUPAL_DB_NAME
+          value: drupaldb  
+        - name: DRUPAL_DB_USER
+          value: drupaluser
+        - name: DRUPAL_DB_PASSWORD
+          value: india123#
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drupal-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: drupal
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
