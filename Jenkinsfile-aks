@@ -1,0 +1,55 @@
+pipeline {
+  agent any
+
+  environment {
+    ACR_NAME = "anandcontainerregistry"  // Replace this
+    IMAGE_NAME = "${ACR_NAME}.azurecr.io/drupal-app"
+  }
+
+  stages {
+    stage('Checkout Code') {
+      steps {
+        git branch: 'main', url: 'https://github.com/trianandji/mysite-docker.git'
+      }
+    }
+
+    stage('Azure ACR Login') {
+      steps {
+        sh "az acr login --name ${ACR_NAME}"
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+        sh "docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest"
+      }
+    }
+
+    stage('Push to Azure ACR') {
+      steps {
+        sh "docker push ${IMAGE_NAME}:${BUILD_NUMBER}"
+        sh "docker push ${IMAGE_NAME}:latest"
+      }
+    }
+
+    stage('Deploy to AKS') {
+      steps {
+        sh "sed -i '' 's|<ACR_NAME>|${ACR_NAME}|g' drupal-mysql-bundle.yaml"
+        sh "kubectl apply -f drupal-mysql-bundle.yaml"
+      }
+    }
+  }
+
+  post {
+    always {
+      echo "Pipeline finished."
+    }
+    success {
+      echo "Drupal successfully deployed to AKS!"
+    }
+    failure {
+      echo "Deployment failed — check logs."
+    }
+  }
+}
