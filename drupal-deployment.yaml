@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: drupal
-        image: trianandji/drupal-app:latest # Using a descriptive image name/registry prefix
+        image: drupal-app-swati:v1 # Using a descriptive image name/registry prefix
         imagePullPolicy: Never
         ports:
         - containerPort: 80
