@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    ACR_NAME = "anandcontainerregistry"  // Replace this
+    ACR_NAME ="myphpacr"  // Replace this
     IMAGE_NAME = "${ACR_NAME}.azurecr.io/drupal-app"
   }
 
