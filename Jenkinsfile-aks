@@ -1,55 +1,50 @@
 pipeline {
-  agent any
-
-  environment {
-    ACR_NAME ="myphpacr"  // Replace this
-    IMAGE_NAME = "${ACR_NAME}.azurecr.io/drupal-app"
-  }
-
-  stages {
-    stage('Checkout Code') {
-      steps {
-        git branch: 'dev', url: 'https://github.com/trianandji/mysite-docker.git'
-      }
+    agent any
+    environment {
+        ACR_NAME = 'myphpacr'
+        IMAGE_NAME = 'mysite-drupal'
+        IMAGE_TAG = 'v1'
+        ACR_URL = "${ACR_NAME}.azurecr.io"
+        RESOURCE_GROUP = 'myResourceGroup'
+        AKS_CLUSTER = 'myAKSCluster'
+        GIT_CREDENTIALS = credentials('GitAuthToken')
+        PATH = "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:$PATH"
+        SHELL = '/bin/bash'
     }
 
-    stage('Azure ACR Login') {
-      steps {
-        sh "az acr login --name ${ACR_NAME}"
-      }
+    stages {
+        stage('Checkout') {
+            steps {
+                 git branch: 'dev', 
+                     //credentialsId: 'GitAuthToken',
+                     url: 'https://github.com/trianandji/mysite-docker.git'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                 withEnv([
+                     "DOCKER_BUILDKIT=1"
+                ]){
+                    sh 'docker build --platform linux/amd64,linux/arm64 -t $IMAGE_NAME .'
+                    sh 'docker tag $IMAGE_NAME $ACR_URL/$IMAGE_NAME:$IMAGE_TAG'
+                }    
+            }
+        }
+        stage('Push to ACR') {
+            steps {
+                    sh '''
+                        az acr login --name ${ACR_NAME}
+                        docker push ${ACR_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                    '''
+               }
+          }
+        stage('Deploy to AKS') {
+            steps { 
+                    sh 'az aks get-credentials --resource-group ${RESOURCE_GROUP} --name ${AKS_CLUSTER}'
+                    sh 'kubectl apply -f deployment.yaml'
+                    sh 'kubectl apply -f service.yaml'
+            }
+        }
     }
-
-    stage('Build Docker Image') {
-      steps {
-        sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
-        sh "docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest"
-      }
-    }
-
-    stage('Push to Azure ACR') {
-      steps {
-        sh "docker push ${IMAGE_NAME}:${BUILD_NUMBER}"
-        sh "docker push ${IMAGE_NAME}:latest"
-      }
-    }
-
-    stage('Deploy to AKS') {
-      steps {
-        sh "sed -i '' 's|<ACR_NAME>|${ACR_NAME}|g' drupal-mysql-bundle.yaml"
-        sh "kubectl apply -f drupal-mysql-bundle.yaml"
-      }
-    }
-  }
-
-  post {
-    always {
-      echo "Pipeline finished."
-    }
-    success {
-      echo "Drupal successfully deployed to AKS!"
-    }
-    failure {
-      echo "Deployment failed — check logs."
-    }
-  }
 }
+
